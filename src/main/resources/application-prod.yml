@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    # 기존 GreenCloset RDS 주소 활용
+    url: jdbc:mysql://greencloset-db.cdmuuiu6cqu4.ap-northeast-2.rds.amazonaws.com:3306/green_closet_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate # 운영 환경 구조 보호
+    show-sql: false

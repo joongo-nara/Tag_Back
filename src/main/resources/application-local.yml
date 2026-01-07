@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    # Docker 3307 포트로 연결 [cite: 13]
+    url: jdbc:mysql://localhost:3307/tag_db?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: tag_user
+    password: tag_password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true

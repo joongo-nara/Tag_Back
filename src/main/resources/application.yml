@@ -1,0 +1,31 @@
+# --- 공통 설정 (GreenCloset 기반 재구성) ---
+spring:
+  application:
+    name: TaG # 프로젝트 이름 변경
+  profiles:
+    active: local # 기본값은 로컬로 실행
+
+server:
+  port: 8080
+
+# 기존 프로젝트의 JWT 및 로깅 설정
+jwt:
+  secret:
+    key: ${JWT_SECRET_KEY}
+
+logging:
+  level:
+    com.example.tag: DEBUG
+    org.springframework: INFO
+
+# AWS S3 설정 (기존 GreenCloset 값 유지)
+cloud:
+  aws:
+    s3:
+      bucket: greencloset-bucket
+      base-url: https://greencloset-bucket.s3.ap-northeast-2.amazonaws.com/
+    region:
+      static: ap-northeast-2
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
