@@ -31,7 +31,10 @@ public class SecurityConfig {
                         // 2. ★★★ Swagger 관련 페이지 접근 허용 (이게 없어서 403 뜸!) ★★★
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
-                        // 3. 나머지는 모두 인증(로그인) 필요
+                        // 3. 상품 등록 관리자 권한
+                        .requestMatchers("/api/submission/**/approve").hasAuthority("ADMIN")
+
+                        // 4. 나머지는 모두 인증(로그인) 필요
                         .anyRequest().authenticated()
                 )
                 // JWT 필터 추가

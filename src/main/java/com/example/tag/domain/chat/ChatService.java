@@ -27,7 +27,7 @@ public class ChatService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
-    // 1. 채팅방 생성 (이미 있으면 기존 방 ID 반환)
+    // 1. 채팅방 생성 (무조건 관리자와 연결)
     @Transactional
     public Long createChatRoom(Long userId, Long productId) {
         User buyer = userRepository.findById(userId)
@@ -35,16 +35,24 @@ public class ChatService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new IllegalArgumentException("상품 없음"));
 
-        // 자신이 올린 상품에는 채팅 불가
-        if (product.getSubmission().getUser().getUserId().equals(userId)) {
-            throw new IllegalArgumentException("자신의 상품에는 채팅을 걸 수 없습니다.");
+        // [수정 1] 판매자(상대방)를 '관리자'로 고정
+        User admin = userRepository.findByEmail("admin@tag.com")
+                .orElseThrow(() -> new IllegalArgumentException("관리자 계정이 없습니다. (AdminInitializer 확인 필요)"));
+
+        // [수정 2] 관리자 본인은 자신에게 채팅 걸 수 없음
+        if (buyer.getEmail().equals("admin@tag.com")) {
+            throw new IllegalArgumentException("관리자는 상품에 대해 채팅을 생성할 수 없습니다.");
         }
+
+        // (참고) 원래 있던 '내 물건엔 채팅 불가' 로직은 삭제했습니다.
+        // -> 내가 접수한 물건이라도 플랫폼(관리자)에 문의할 수 있어야 하니까요.
 
         // 이미 생성된 방이 있는지 확인
         return chatRoomRepository.findByProduct_ProductIdAndBuyer_UserId(productId, userId)
                 .map(ChatRoom::getId)
                 .orElseGet(() -> {
-                    ChatRoom room = ChatRoom.createRoom(product, buyer, product.getSubmission().getUser()); // 판매자는 product.getUser()
+                    // 판매자를 admin으로 설정하여 방 생성
+                    ChatRoom room = ChatRoom.createRoom(product, buyer, admin);
                     chatRoomRepository.save(room);
                     return room.getId();
                 });
@@ -52,15 +60,14 @@ public class ChatService {
 
     // 2. 내 채팅방 목록 조회
     public List<ChatDto.RoomResponse> getMyChatRooms(Long userId) {
-        // 내가 구매자이거나 판매자인 방을 모두 찾음
+        // 내가 구매자이거나 판매자(관리자)인 방을 모두 찾음
         List<ChatRoom> rooms = chatRoomRepository.findByBuyer_UserIdOrSeller_UserIdOrderByCreatedAtDesc(userId, userId);
 
         return rooms.stream().map(room -> {
-            // 상대방 이름 찾기 (내가 구매자면 -> 판매자가 상대방, 반대면 구매자가 상대방)
+            // 상대방 이름 찾기 (내가 구매자면 -> 판매자(관리자)가 상대방, 관리자면 -> 구매자가 상대방)
             User partner = room.getBuyer().getUserId().equals(userId) ? room.getSeller() : room.getBuyer();
 
-            // 마지막 메시지 찾기 (없으면 공백)
-            // 성능 최적화를 위해선 쿼리를 따로 짜는 게 좋지만, 일단 간단하게 구현
+            // 마지막 메시지 찾기
             List<ChatMessage> messages = chatMessageRepository.findByChatRoom_IdOrderBySentAtAsc(room.getId());
             String lastMessage = messages.isEmpty() ? "대화가 없습니다." : messages.get(messages.size() - 1).getMessage();
             LocalDateTime lastTime = messages.isEmpty() ? room.getCreatedAt() : messages.get(messages.size() - 1).getSentAt();
@@ -76,7 +83,7 @@ public class ChatService {
         }).collect(Collectors.toList());
     }
 
-    // 3. 메시지 전송
+    // 3. 메시지 전송 (기존과 동일)
     @Transactional
     public ChatDto.MessageResponse sendMessage(Long roomId, Long senderId, String content) {
         ChatRoom room = chatRoomRepository.findById(roomId)
@@ -84,11 +91,9 @@ public class ChatService {
         User sender = userRepository.findById(senderId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
-        // 엔티티 생성 및 저장
         ChatMessage message = ChatMessage.create(room, sender, content);
         chatMessageRepository.save(message);
 
-        // DTO 반환
         return ChatDto.MessageResponse.builder()
                 .messageId(message.getId())
                 .senderId(sender.getUserId())
@@ -99,7 +104,7 @@ public class ChatService {
                 .build();
     }
 
-    // 4. 메시지 내역 조회
+    // 4. 메시지 내역 조회 (기존과 동일)
     public List<ChatDto.MessageResponse> getMessages(Long roomId, Long userId) {
         ChatRoom room = chatRoomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("방 없음"));

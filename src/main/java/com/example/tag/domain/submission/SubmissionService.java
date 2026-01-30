@@ -32,8 +32,15 @@ public class SubmissionService {
     public String approveSubmission(Long submissionId) {
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new IllegalArgumentException("접수 내역이 없습니다."));
+
+        // 이미 승인된 건인지 확인하는 코드
+        if ("ACCEPTED".equals((submission.getStatus()))) {
+            throw  new IllegalStateException("이미 승인되어 상품으로 등록된 건입니다.");
+        }
+
         // 상태 변경 (REQUESTED -> ACCEPTED)
         submission.updateStatus("ACCEPTED");
+
         // 상품 생성 (ProductService 호출)
         productService.createProductFromSubmission(submission);
 
