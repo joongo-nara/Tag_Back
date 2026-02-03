@@ -32,7 +32,7 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                         // 3. 상품 등록 관리자 권한
-                        .requestMatchers("/api/submission/**/approve").hasAuthority("ADMIN")
+                        .requestMatchers("/api/submission/*/approve").hasAuthority("ADMIN")
 
                         // 4. 나머지는 모두 인증(로그인) 필요
                         .anyRequest().authenticated()
